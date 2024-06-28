@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'dart:developer';
+
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:keycloak_authentication/core/config.dart';
+import 'package:keycloak_authentication/core/sso_user_model.dart';
 
 class AuthService {
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
@@ -32,23 +36,57 @@ class AuthService {
     }
   }
 
+
+
   Future<void> logout() async {
+    await endSession();
     await _secureStorage.deleteAll();
   }
+
+  Future<void> endSession() async {
+    final String? idToken = await _secureStorage.read(key: 'id_token');
+
+    if (idToken != null) {
+      try {
+        await _appAuth.endSession(EndSessionRequest(
+          idTokenHint: idToken,
+          postLogoutRedirectUrl: _redirectUrl,
+          discoveryUrl: '$_issuer/.well-known/openid-configuration',
+        ));
+        await _secureStorage.deleteAll();
+        print('Logout successful');
+      } catch (e) {
+        print('Error during logout: $e');
+      }
+    } else {
+      print('No ID token found for logout');
+    }
+  }
+  
 
   Future<String?> getAccessToken() async {
     return await _secureStorage.read(key: 'access_token');
   }
 
-  Future<String?> getUserInfo() async {
+  Future<String?> getIdToken() async {
+    return await _secureStorage.read(key: 'id_token');
+  }
+
+  Future<SsoUserModel> getUserInfo() async {
     final String? accessToken = await getAccessToken();
+    final String? idToken = await getIdToken();
+    if (idToken != null) {
+      log('Access token = $accessToken');
+    }
     if (accessToken != null) {
       final response = await http.get(
         Uri.parse('$_issuer/protocol/openid-connect/userinfo'),
         headers: {'Authorization': 'Bearer $accessToken'},
       );
+      log('Access token = $accessToken');
       if (response.statusCode == 200) {
-        return response.body;
+        final Map<String, dynamic> userInfoJson = jsonDecode(response.body);
+        return SsoUserModel.fromJson(userInfoJson);
       } else {
         throw Exception('Failed to load user info');
       }

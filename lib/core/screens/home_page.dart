@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:keycloak_authentication/core/authentication_service.dart';
+import 'package:keycloak_authentication/core/sso_user_model.dart';
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -23,8 +24,8 @@ class HomePage extends StatelessWidget {
               onPressed: () async {
                 // Example: Fetch user info after login
                 try {
-                  final userInfo = await _authService.getUserInfo();
-                  debugPrint(userInfo);
+                  final SsoUserModel userInfo = await _authService.getUserInfo();
+                  print(userInfo.username);
                 } catch (e) {
                   debugPrint('Error fetching user info: $e');
                 }
