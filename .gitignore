@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 
+# Ignore configuration file
+lib/core/config.dart
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -41,3 +44,4 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
